@@ -1,0 +1,7 @@
+.workbuddy/
+DEBUG.md
+fix_*.py
+add_*.py
+*.pyc
+__pycache__/
+node_modules/

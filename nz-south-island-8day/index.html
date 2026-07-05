@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>新西兰南岛8天自驾环线 · 行程地图</title>
+<meta name="description" content="基督城出发环南岛中线精华 — 蒂卡波·库克山·瓦纳卡·箭镇·皇后镇·东海岸">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="lib/leaflet.css" />
+<script src="lib/leaflet.js"></script>
+<style>
+:root {
+  --bg-primary:    #ffffff;
+  --bg-secondary:  #f5f5f7;
+  --bg-tertiary:   #fbfbfd;
+  --bg-grouped:    #f2f2f7;
+  --bg-elevated:   #ffffff;
+  --text-primary:   #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary:  #aeaeb2;
+  --accent:        #0071e3;
+  --accent-hover:  #0077ed;
+  --tint-red:    #ff3b30;
+  --tint-orange: #ff9500;
+  --tint-green:  #34c759;
+  --tint-blue:   #007aff;
+  --tint-purple: #af52de;
+  --tint-pink:   #ff2d55;
+  --separator:  rgba(60, 60, 67, .12);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 14px rgba(0,0,0,.08);
+  --shadow-lg:  0 8px 30px rgba(0,0,0,.12);
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+               "Helvetica Neue", "Arial", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.47059;
+  letter-spacing: -0.022em;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+#map { width: 100%; height: 40vh; min-height: 280px; position: sticky; top: 0; z-index: 100; }
+.locate-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  border: none; box-shadow: 0 1px 4px rgba(0,0,0,.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.locate-btn.active { color: #007aff; }
+@keyframes loc-pulse {
+  0%   { transform: scale(1); opacity: .55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.loc-pulse {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(0,122,255,.25);
+  animation: loc-pulse 1.6s ease-out infinite;
+}
+
+.tabs {
+  display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  background: rgba(255,255,255,.85); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px); position: sticky; top: 40vh; z-index: 99;
+  border-bottom: .5px solid var(--separator); scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; padding: 7px 16px; border-radius: 980px; border: none;
+  background: var(--bg-grouped); color: var(--text-secondary);
+  font-size: 14px; font-weight: 500; cursor: pointer; transition: all .25s ease;
+  white-space: nowrap; letter-spacing: -0.01em;
+}
+.tab:active { transform: scale(.96); }
+.tab.active { background: var(--accent); color: #fff; }
+
+.content { max-width: 680px; margin: 0 auto; padding: 16px 16px calc(24px + var(--safe-bottom)); }
+
+.hero { text-align: center; padding: 28px 20px 20px; }
+.hero h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; }
+.hero .subtitle { font-size: 17px; color: var(--text-secondary); margin-top: 6px; font-weight: 400; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.info-card { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm); }
+.info-card .label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .02em; margin-bottom: 6px; }
+.info-card .value { font-size: 15px; font-weight: 600; line-height: 1.4; }
+
+.section-head { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .03em; padding: 20px 0 8px; }
+
+.day-head { padding: 20px 0 12px; }
+.day-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.day-head p { font-size: 15px; color: var(--text-secondary); margin-top: 2px; }
+
+.route-bar { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 14px; box-shadow: var(--shadow-sm); font-size: 13px; color: var(--text-secondary); line-height: 1.7; white-space: pre-line; }
+.route-bar strong { color: var(--text-primary); }
+
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 20px; bottom: 20px; width: 1.5px; background: var(--separator); }
+.tl-item { position: relative; margin-bottom: 10px; }
+.tl-dot { position: absolute; left: -20px; top: 18px; width: 10px; height: 10px; border-radius: 50%; z-index: 1; box-shadow: 0 0 0 3px var(--bg-secondary); }
+.tl-dot.food    { background: var(--tint-red); }
+.tl-dot.spot    { background: var(--tint-blue); }
+.tl-dot.hotel   { background: var(--tint-orange); }
+.tl-dot.drink   { background: var(--tint-purple); }
+.tl-dot.transport { background: var(--text-tertiary); }
+
+.card { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 14px 16px; box-shadow: var(--shadow-sm); transition: box-shadow .25s ease; cursor: pointer; }
+.card:active { box-shadow: var(--shadow-md); }
+.card .time { font-size: 12px; font-weight: 600; color: var(--text-tertiary); letter-spacing: .01em; }
+.card .name { font-size: 17px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
+.card .desc { font-size: 14px; color: var(--text-secondary); line-height: 1.45; }
+
+.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 4px; }
+.badge.food   { background: rgba(255,59,48,.1);  color: var(--tint-red); }
+.badge.spot   { background: rgba(0,122,255,.1);  color: var(--tint-blue); }
+.badge.drink  { background: rgba(175,82,222,.1); color: var(--tint-purple); }
+.badge.hotel  { background: rgba(255,149,0,.1);  color: var(--tint-orange); }
+
+.budget { display: inline-block; margin-top: 6px; padding: 3px 10px; background: var(--bg-grouped); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+
+.pays { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.pay { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.pay.ok  { background: rgba(52,199,89,.1);  color: var(--tint-green); }
+.pay.no  { background: rgba(255,59,48,.08); color: var(--tint-red); }
+.pay.idk { background: rgba(255,149,0,.1);  color: var(--tint-orange); }
+
+.links { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+  text-decoration: none !important; transition: filter .2s;
+}
+.btn:active { filter: brightness(.9); }
+.btn.nav    { background: var(--accent); color: #fff; }
+.btn.xhs    { background: #ff2442; color: #fff; }
+.btn.rsv    { background: var(--tint-green); color: #fff; }
+.btn.airbnb { background: #FF385C; color: #fff; }
+
+.as-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(2px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.as-overlay.show { opacity: 1; pointer-events: auto; }
+.as-sheet {
+  width: 100%; max-width: 420px;
+  padding: 0 8px 34px;
+  transform: translateY(100%); transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.as-overlay.show .as-sheet { transform: translateY(0); }
+.as-group {
+  background: rgba(255,255,255,.88); backdrop-filter: blur(20px);
+  border-radius: 14px; overflow: hidden; margin-bottom: 8px;
+}
+.as-group .as-item {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px; font-size: 18px; color: #007aff; font-weight: 500;
+  border: none; background: none; width: 100%; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.as-group .as-item + .as-item { border-top: .5px solid rgba(0,0,0,.12); }
+.as-group .as-item:active { background: rgba(0,0,0,.06); }
+.as-cancel { font-weight: 600; }
+
+.details {
+  margin-top: 10px; padding-top: 10px;
+  border-top: .5px solid var(--separator);
+  font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+}
+.details.closed { display: none; }
+
+.day-list .card { margin-bottom: 8px; }
+.day-list .card .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+.pay-summary { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 14px 16px; box-shadow: var(--shadow-sm); font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
+.pay-summary h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.pay-summary .warn { color: var(--tint-red); }
+.pay-summary .ok-text { color: var(--tint-green); }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 0; font-size: 12px; color: var(--text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.leaflet-popup-content-wrapper { border-radius: var(--radius-md) !important; box-shadow: var(--shadow-lg) !important; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important; }
+.leaflet-popup-content { font-size: 14px !important; line-height: 1.5 !important; margin: 12px 14px !important; }
+.leaflet-popup-content a { color: var(--accent) !important; }
+.leaflet-popup-tip { background: #fff !important; }
+.leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; font-size: 16px !important; border-radius: 10px !important; background: rgba(255,255,255,.85) !important; -webkit-backdrop-filter: blur(10px) !important; backdrop-filter: blur(10px) !important; border: .5px solid var(--separator) !important; color: var(--text-primary) !important; }
+.leaflet-control-zoom { border-radius: 12px !important; overflow: hidden; box-shadow: var(--shadow-md) !important; border: none !important; }
+.leaflet-control-attribution { font-size: 9px !important; opacity: .5; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="tabs" id="tabs"></div>
+<div class="content" id="content"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  新西兰南岛8天自驾环线 — 数据中心                             ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const HOTEL = { name: '基督城', lat: -43.532, lng: 172.636 };
+
+// Color palette for days
+const D1 = '#34c759'; // 基督城 green
+const D2 = '#007aff'; // 蒂卡波 blue
+const D3 = '#5856d6'; // 库克山 indigo
+const D4 = '#ff9500'; // 瓦纳卡 orange
+const D5 = '#af52de'; // 箭镇/皇后镇 purple
+const D6 = '#ff2d55'; // 皇后镇 pink
+const D7 = '#ff3b30'; // 回程 red
+const D8 = '#8e8e93'; // 返程 grey
+
+const DAYS = [
+  { id: 0, label: '总览', color: '#0071e3', locations: [] },
+
+  // ═══════════ Day 1 ═══════════
+  { id: 1, label: 'D1 抵达', date: '9月29日 周一', title: '基督城 · 花园之城', color: D1, locations: [
+    {
+      name: '基督城机场 CHC', lat: -43.4894, lng: 172.5322, type: 'transport',
+      time: '抵达', desc: '入境取车，推荐Apex/Go Rentals经济SUV',
+      detail: '入境申报：任何食物、户外装备（登山鞋/帐篷）必须申报。\n租车柜台在航站楼内，取车点在停车场。\n建议购买全险（~30 NZD/天），NZ路窄弯多。',
+      gmap: 'Christchurch+Airport'
+    },
+    {
+      name: 'Countdown超市采购', lat: -43.5230, lng: 172.5990, type: 'food',
+      time: '15:00', desc: '储备早餐食材、饮用水、零食、水果',
+      budget: '~60 NZD',
+      detail: '买：面包、鸡蛋、牛奶、火腿、奶酪（早餐三明治材料）\n水果（NZ奇异果/苹果便宜又好吃）\n瓶装水（南岛自来水可直接饮用）\n路上零食（薯片/巧克力/坚果）',
+      gmap: 'Countdown+Riccarton+Christchurch'
+    },
+    {
+      name: '基督城植物园 🌿', lat: -43.5300, lng: 172.6210, type: 'spot',
+      time: '16:00', desc: '免费，春季繁花盛开，雅芳河畔漫步',
+      detail: '基督城最古老的公园，占地21公顷。\n10月初：樱花、杜鹃花、郁金香正值花期。\n雅芳河上可以Punting撑船（~30 NZD/人）。\n入口在Rolleston Ave，免费。',
+      gmap: 'Christchurch+Botanic+Gardens'
+    },
+    {
+      name: '纸板大教堂', lat: -43.5325, lng: 172.6430, type: 'spot',
+      time: '17:30', desc: '地震后临时教堂，纸管结构建筑奇迹',
+      detail: '2011年地震后由日本建筑师坂茂设计。\n98根硬纸管构成A型框架，可容纳700人。\n免费参观，门口有地震纪念展览。\n位于市中心，旁边就是地震遗址纪念地。',
+      gmap: 'Cardboard+Cathedral+Christchurch'
+    },
+    {
+      name: 'Riverside Market 晚餐', lat: -43.5335, lng: 172.6370, type: 'food',
+      time: '18:30', desc: '室内美食市集，各国料理，氛围热闹',
+      budget: '人均 15-25 NZD',
+      detail: '推荐：The Pasta View（手工意面）、Bacon Bros（汉堡）、\nWhiti Seafood（海鲜拼盘）。\n二楼有酒吧区，可以点本地精酿啤酒。\n营业至21:00，建议18:00前去避开高峰。',
+      pay: { card: 1 },
+      gmap: 'Riverside+Market+Christchurch'
+    },
+    {
+      name: '基督城 Airbnb', lat: -43.5150, lng: 172.5900, type: 'hotel',
+      time: '20:00', desc: 'Merivale/Riccarton区整租公寓，2卧',
+      budget: '~220 NZD/晚',
+      detail: '推荐区域：Merivale（安静高档）、Riccarton（近超市商场）。\n人均：~315 RMB ✅ 远在预算内。\n设施：全套厨房、WiFi、免费停车。',
+      gmap: 'Merivale+Christchurch+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Christchurch-New-Zealand/homes?checkin=2026-09-29&checkout=2026-09-30&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 2 ═══════════
+  { id: 2, label: 'D2 蒂卡波', date: '9月30日 周二', title: '基督城 → 蒂卡波湖', color: D2, locations: [
+    {
+      name: 'Rakaia Gorge 峡谷', lat: -43.5090, lng: 171.6780, type: 'spot',
+      time: '10:30', desc: '短暂停留拍照，峡谷+冰川水蓝绿色',
+      detail: 'SH72公路上的观景点，停车区就在桥头。\n远眺Rakaia河峡谷和南阿尔卑斯山。\n停留5-10分钟即可，继续赶路。',
+      gmap: 'Rakaia+Gorge+Viewpoint'
+    },
+    {
+      name: '好牧羊人教堂 ⛪', lat: -44.0035, lng: 170.4822, type: 'spot',
+      time: '12:30', desc: '蒂卡波标志，雪山+湖水+石教堂经典构图',
+      detail: '建于1935年，新西兰最上镜的教堂。\n窗户正对湖面和雪山，免费参观。\n白天是游客打卡点，晚上是星空摄影圣地。\n注意：教堂内部禁止拍照。',
+      gmap: 'Church+of+the+Good+Shepherd+Tekapo'
+    },
+    {
+      name: 'The Greedy Cow 午餐', lat: -44.0040, lng: 170.4828, type: 'food',
+      time: '13:00', desc: '蒂卡波最受欢迎cafe，牛肉汉堡招牌',
+      budget: '人均 18-28 NZD',
+      detail: 'Google Maps 4.3 · 600+ reviews。\n推荐：Angus Beef Burger、Flat White。\n位置：小镇主街，离教堂步行2分钟。',
+      pay: { card: 1 },
+      gmap: 'The+Greedy+Cow+Lake+Tekapo'
+    },
+    {
+      name: 'Mt John 天文台 🔭', lat: -43.9850, lng: 170.4648, type: 'spot',
+      time: '15:30', desc: '山顶360°全景，Astro Café喝热巧',
+      budget: '上山费 8 NZD/车',
+      detail: '开车上山顶，路窄注意会车。\n山顶Astro Café（10:00-17:00），热巧克力+山顶全景=完美。\nMt John是南半球最重要的天文观测站之一。\n如果风大，入口处有时会关闭。',
+      gmap: 'Mt+John+Observatory+Tekapo'
+    },
+    {
+      name: '蒂卡波湖观星 🌌', lat: -44.0035, lng: 170.4822, type: 'spot',
+      time: '20:00', desc: '国际暗夜保护区，肉眼可见银河',
+      budget: '免费 / 跟团 159 NZD/人',
+      detail: '蒂卡波是全球最大的暗夜保护区（Dark Sky Reserve）。\n免费：教堂旁湖边，肉眼清晰可见银河+南十字星。\n付费：Dark Sky Project观星团，含专业望远镜和讲解。\nTIP：提前查月相，避开满月前后3天。',
+      gmap: 'Dark+Sky+Project+Tekapo',
+      reserve: 'https://www.darkskyproject.co.nz/'
+    },
+    {
+      name: '蒂卡波 Airbnb', lat: -44.0050, lng: 170.4780, type: 'hotel',
+      time: '—', desc: '湖景度假屋（提前1月+预订！）',
+      budget: '~300 NZD/晚',
+      detail: '⚠️ 蒂卡波房源极少！建议提前1个月+预订。\n超预算可选：住Twizel（Day 3住处），观星后开40min回去。\n度假公园小木屋备选：Lake Tekapo Motels & Holiday Park ~150 NZD/晚。',
+      gmap: 'Lake+Tekapo+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Lake-Tekapo-New-Zealand/homes?checkin=2026-09-30&checkout=2026-10-01&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 3 ═══════════
+  { id: 3, label: 'D3 库克山', date: '10月1日 周三', title: '库克山国家公园', color: D3, locations: [
+    {
+      name: '普卡基湖观景台', lat: -44.1190, lng: 170.1660, type: 'spot',
+      time: '09:30', desc: '牛奶蓝湖水+库克山倒影，必停拍照点',
+      detail: '沿SH80公路前往库克山，普卡基湖就在右手边。\n湖水含冰川岩粉呈现独特的"牛奶蓝"。\n观景台在Peter\'s Lookout，有停车区。\n天气好的时候库克山倒影绝美。',
+      gmap: 'Peters+Lookout+Lake+Pukaki'
+    },
+    {
+      name: 'Hooker Valley Track 🥾', lat: -43.7185, lng: 170.0965, type: 'spot',
+      time: '10:00', desc: '新西兰最美一日步道，往返3h',
+      detail: '全程10km往返，几乎平路，老少皆宜。\n经过3座吊桥，终点Hooker Lake——浮冰漂浮的冰川湖。\n库克山峰（Mt Cook, 3724m）倒映湖中。\nTIP：带防风外套、帽子、水、零食。雨天取消。\n起点：White Horse Hill Campground停车场。',
+      gmap: 'Hooker+Valley+Track+Start'
+    },
+    {
+      name: '野餐午餐 🥪', lat: -43.7185, lng: 170.0965, type: 'food',
+      time: '13:30', desc: '自带三明治+水果，冰川湖景配午餐',
+      budget: '人均 ~10 NZD',
+      detail: '提前在Twizel超市买好面包、火腿、水果。\nHooker Valley终点或中途休息亭均可野餐。\n注意：山上无垃圾桶，垃圾自带下山。',
+      pay: { card: 1 }
+    },
+    {
+      name: 'Tasman Glacier 观景台', lat: -43.6950, lng: 170.1640, type: 'spot',
+      time: '14:30', desc: '新西兰最长冰川，短途步道30min往返',
+      detail: '从Tasman Valley Road开车至尽头停车场。\n步道爬升约100米（台阶较多），到达观景台俯瞰冰川湖。\n湖面常有蓝白色的冰山漂浮。\n比Hooker Valley更野性，游客更少。',
+      gmap: 'Tasman+Glacier+View+Track'
+    },
+    {
+      name: 'Alpine Salmon 三文鱼 🍣', lat: -44.2350, lng: 170.1020, type: 'food',
+      time: '15:30', desc: '高山养殖三文鱼，新鲜刺身入口即化',
+      budget: '12-18 NZD/盒',
+      detail: 'Google Maps 4.5 · 300+ reviews。\n就在普卡基湖游客中心旁。\n推荐：Sashimi Box（刺身盒 15 NZD）、Whole Fillet（整块鱼柳）。\n现场吃或带走当晚餐。',
+      pay: { card: 1 },
+      gmap: 'Mt+Cook+Alpine+Salmon+Shop'
+    },
+    {
+      name: '特威泽尔 Airbnb 🏠', lat: -44.2580, lng: 170.1000, type: 'hotel',
+      time: '17:00', desc: 'Twizel小镇整租，比库克山便宜一半',
+      budget: '~190 NZD/晚',
+      detail: 'Twizel是库克山地区最实惠的住宿选择。\n小镇有Four Square超市和几家餐厅。\n人均：~272 RMB ✅ 预算友好。\n晚上可以在小镇周边看星空（同样很棒）。',
+      gmap: 'Twizel+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Twizel-New-Zealand/homes?checkin=2026-10-01&checkout=2026-10-02&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 4 ═══════════
+  { id: 4, label: 'D4 瓦纳卡', date: '10月2日 周四', title: '特威泽尔 → 瓦纳卡', color: D4, locations: [
+    {
+      name: 'Lindis Pass 林迪斯山口', lat: -44.6000, lng: 169.6450, type: 'spot',
+      time: '10:30', desc: '南岛最美内陆公路，金色草甸+雪山',
+      detail: 'SH8公路，Lindis Pass是南岛最高公路山口之一（971m）。\n10月春季：金色草丛+山顶白雪+蓝天=绝美。\n山顶有观景台停车区，拍照效果震撼。\n注意弯道和横风，安全驾驶。',
+      gmap: 'Lindis+Pass+Summit'
+    },
+    {
+      name: 'Big Fig 午餐', lat: -44.6965, lng: 169.1365, type: 'food',
+      time: '12:00', desc: '瓦纳卡排队王，慢炖料理按重量计价',
+      budget: '人均 18-25 NZD',
+      detail: 'Google Maps 4.6 · 900+ reviews。\n自助选菜，按重量计价，想吃什么夹什么。\n推荐：慢炖羊肉、烤花椰菜、红薯泥。\n中东/地中海融合风味，食材新鲜健康。\n位置：镇中心主街，门口常排队。',
+      pay: { card: 1 },
+      gmap: 'Big+Fig+Wanaka'
+    },
+    {
+      name: '孤独的树 🌳', lat: -44.6983, lng: 169.1315, type: 'spot',
+      time: '13:30', desc: '#ThatWanakaTree，新西兰最著名的一棵树',
+      detail: '孤零零长在瓦纳卡湖水中，背景是雪山。\n新西兰Instagram出镜率最高的景点。\n10月春季：水位适中，树影完整。\n最佳拍摄：清晨或傍晚，光线柔和。\n位置：瓦纳卡湖边，Roys Bay。',
+      gmap: 'That+Wanaka+Tree'
+    },
+    {
+      name: 'Puzzling World 迷幻世界', lat: -44.6960, lng: 169.1650, type: 'spot',
+      time: '—', desc: '备选：倾斜屋+迷宫，有趣但不必须',
+      budget: '~25 NZD/人',
+      detail: '适合下雨天或带小孩。\n迷宫+倾斜屋+幻觉展馆。\n如果天气好，更推荐湖边步道散步。\n开车去Puzzling World只需5分钟。',
+      gmap: 'Puzzling+World+Wanaka'
+    },
+    {
+      name: 'Kika 晚餐', lat: -44.6945, lng: 169.1370, type: 'food',
+      time: '—', desc: '备选：瓦纳卡No.1精致西餐，需预约',
+      budget: '人均 35-50 NZD',
+      detail: 'Google Maps 4.7 · 700+ reviews。\n推荐：Lamb Shoulder（慢烤羊肩）、Creme Brulee。\n氛围精致但不过分正式，适合犒劳自己。\n建议提前一天预约。',
+      pay: { card: 1 },
+      gmap: 'Kika+Wanaka',
+      reserve: 'https://www.kika.nz/'
+    },
+    {
+      name: '瓦纳卡 Airbnb 🏠', lat: -44.7050, lng: 169.1500, type: 'hotel',
+      time: '17:00', desc: 'Albert Town区湖景公寓，安静实惠',
+      budget: '~240 NZD/晚',
+      detail: '推荐Albert Town区：比镇中心便宜30%，离湖5分钟车程。\n人均：~344 RMB ✅。\n晚上可以去湖边看日落，雪山被夕阳染成金色。\nNew World超市在旁边，买食材方便。',
+      gmap: 'Albert+Town+Wanaka+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Wanaka-New-Zealand/homes?checkin=2026-10-02&checkout=2026-10-03&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 5 ═══════════
+  { id: 5, label: 'D5 箭镇', date: '10月3日 周五', title: '箭镇 → 皇后镇', color: D5, locations: [
+    {
+      name: 'Crown Range Road 🏔️', lat: -44.9200, lng: 168.8700, type: 'spot',
+      time: '09:00', desc: '南岛最高公路，翻山越岭风景绝美',
+      detail: '新西兰最高主干道公路（1121m）。\n从瓦纳卡到箭镇最直接的路线（~55min）。\n山顶观景台可以俯瞰整个山谷。\n注意：弯急坡陡，冬季可能结冰（10月初基本无雪了）。',
+      gmap: 'Crown+Range+Road+Summit'
+    },
+    {
+      name: '箭镇 Arrowtown ⛏️', lat: -44.9380, lng: 168.8280, type: 'spot',
+      time: '10:00', desc: '淘金古镇，百年老街，春季繁花盛开',
+      detail: '1860年代淘金热小镇，保留完整维多利亚街景。\n白金汉街（Buckingham St）：各色小店、画廊、咖啡馆。\n华人淘金者遗址（免费）：了解早期华人移民艰苦历史。\n10月：梨花、樱花盛开，小镇美到像电影场景。\n推荐游玩2-3小时。',
+      gmap: 'Arrowtown+Buckingham+Street'
+    },
+    {
+      name: 'Arrowtown Bakery 🥐', lat: -44.9385, lng: 168.8285, type: 'food',
+      time: '11:00', desc: '传奇乡村面包店，肉派+奶油甜甜圈',
+      budget: '人均 8-15 NZD',
+      detail: 'Google Maps 4.5 · 450+ reviews。\n百年老店，箭头镇必打卡。\n招牌：Steak & Cheese Pie（牛肉芝士派）、\nCream Donut（新鲜奶油甜甜圈）。\n买了边走边吃，逛白金汉街。',
+      pay: { card: 1 },
+      gmap: 'Arrowtown+Bakery'
+    },
+    {
+      name: 'Fergburger 🍔', lat: -45.0318, lng: 168.6623, type: 'food',
+      time: '13:00', desc: '皇后镇传奇汉堡，排队是仪式的一部分',
+      budget: '人均 15-22 NZD',
+      detail: 'Google Maps 4.4 · 12000+ reviews。\n皇后镇地标级餐厅，没吃过等于没来过。\n推荐：Big Al（双层牛肉+培根+鸡蛋）、\nSweet Julie（照烧鸡肉+菠萝）。\n排队20-30分钟正常，可以提前电话订。\n隔壁Fergbaker甜品店也值得一试。',
+      pay: { card: 1 },
+      gmap: 'Fergburger+Queenstown'
+    },
+    {
+      name: 'Skyline Gondola 🚡', lat: -45.0286, lng: 168.6565, type: 'spot',
+      time: '15:30', desc: '山顶俯瞰皇后镇全景+Luge滑车',
+      budget: '缆车 ~49 NZD/人',
+      detail: '南半球最陡的缆车索道，山顶海拔790m。\n山顶观景台：Lake Wakatipu+Remarkables山脉全景。\nLuge滑车（需额外买票）：重力滑车，成人也玩到停不下来。\n山顶餐厅（Stratosfare）：自助餐 ~80 NZD/人。\n建议提前网上买票，现场排队慢。',
+      gmap: 'Skyline+Queenstown+Gondola',
+      reserve: 'https://www.skyline.co.nz/queenstown/'
+    },
+    {
+      name: '皇后镇 Airbnb 🏠', lat: -45.0150, lng: 168.7400, type: 'hotel',
+      time: '18:00', desc: 'Frankton区湖景公寓，连住2晚',
+      budget: '~250 NZD/晚',
+      detail: '推荐Frankton区：比镇中心便宜30%，近机场和超市。\n人均：~358 RMB ✅。\n设施：全套厨房（今晚和明天晚饭自炊）+ 湖景阳台。\nRemarkables Park购物中心步行可达，New World超市采买。',
+      gmap: 'Frankton+Queenstown+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Queenstown-New-Zealand/homes?checkin=2026-10-03&checkout=2026-10-05&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 6 ═══════════
+  { id: 6, label: 'D6 皇后镇', date: '10月4日 周六', title: '皇后镇自由日', color: D6, locations: [
+    {
+      name: 'Queenstown Gardens 🌸', lat: -45.0350, lng: 168.6640, type: 'spot',
+      time: '09:00', desc: '湖边半岛花园，清晨散步绝佳',
+      detail: '免费，皇后镇最被低估的景点。\n伸入湖中的半岛花园，百年大树+玫瑰园。\nFrisbee Golf（飞盘高尔夫）免费玩。\n湖边长椅发呆，看雪山和蒸汽船。\n清晨光线最适合拍照。',
+      gmap: 'Queenstown+Gardens'
+    },
+    {
+      name: 'Kawarau Bridge 蹦极 🎢', lat: -45.0050, lng: 168.8310, type: 'spot',
+      time: '—', desc: '备选：世界蹦极发源地，43米跳桥',
+      budget: '~205 NZD/人',
+      detail: '1988年，AJ Hackett在这里开了世界第一家商业蹦极。\n43米桥跳，下面是碧绿的Kawarau河。\n可以选择触水或不触水。\n不敢跳也可以去观景台看别人跳（免费）。\n距离皇后镇20分钟车程。',
+      gmap: 'Kawarau+Bridge+Bungy',
+      reserve: 'https://www.bungy.co.nz/'
+    },
+    {
+      name: 'Gibbston Valley 酒庄 🍷', lat: -45.0180, lng: 168.9560, type: 'spot',
+      time: '—', desc: '备选：中奥塔哥黑皮诺，品酒+午餐',
+      budget: '品酒 ~15-25 NZD/人',
+      detail: '中奥塔哥是世界最南端的葡萄酒产区，黑皮诺（Pinot Noir）闻名。\nGibbston Valley是最大的酒庄之一，有酒窖tour。\n推荐：Wine Tasting Flight（品酒套餐）+ Cheese Platter。\n注意：司机不能喝酒！可以买酒带回Airbnb喝。',
+      gmap: 'Gibbston+Valley+Winery',
+      reserve: 'https://www.gibbstonvalley.com/'
+    },
+    {
+      name: 'Flame Bar & Grill 🥩', lat: -45.0325, lng: 168.6610, type: 'food',
+      time: '—', desc: '备选：南非风味烧烤，猪肋排分量逆天',
+      budget: '人均 30-45 NZD',
+      detail: 'Google Maps 4.4 · 2500+ reviews。\n皇后镇最火餐厅之一，建议预约。\n招牌：Full Rack Pork Ribs（一整扇猪肋排），两人分享绰绰有余。\n湖边位置，靠窗位看湖景。',
+      pay: { card: 1 },
+      gmap: 'Flame+Bar+and+Grill+Queenstown'
+    },
+    {
+      name: 'Patagonia 冰淇淋 🍦', lat: -45.0320, lng: 168.6627, type: 'food',
+      time: '—', desc: '湖边必吃手工冰淇淋+热巧克力',
+      budget: '~8-12 NZD',
+      detail: 'Google Maps 4.4 · 2000+ reviews。\n门口常年排队。\n推荐：Double Scoop（双球）+ Waffle Cone。\n口味：Dulce de Leche、Boysenberry（NZ特有浆果）。\n坐在湖边吃冰淇淋看雪山 = 皇后镇最正确的打开方式。',
+      pay: { card: 1 },
+      gmap: 'Patagonia+Chocolates+Queenstown'
+    },
+    {
+      name: '皇后镇 Airbnb 🏠', lat: -45.0150, lng: 168.7400, type: 'hotel',
+      time: '—', desc: 'Frankton区，第二晚',
+      budget: '~250 NZD/晚',
+      detail: '今晚继续Frankton Airbnb。\n推荐晚饭：超市买NZ羊排（~20 NZD/kg）+ 本地Pinot Noir（~25 NZD），\nAirbnb厨房煎羊排+红酒，比外面吃省一半以上。',
+      gmap: 'Frankton+Queenstown+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Queenstown-New-Zealand/homes?checkin=2026-10-03&checkout=2026-10-05&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 7 ═══════════
+  { id: 7, label: 'D7 回程', date: '10月5日 周日', title: '东海岸 → 基督城', color: D7, locations: [
+    {
+      name: 'Lindis Pass 晨光', lat: -44.6000, lng: 169.6450, type: 'spot',
+      time: '08:30', desc: '清晨光影最美，金色山谷',
+      detail: '早出发，清晨光线下的Lindis Pass比去程更美。\n山谷晨雾+金色草甸+雪山背景。',
+      gmap: 'Lindis+Pass+Summit'
+    },
+    {
+      name: '摩拉基大圆石 🪨', lat: -45.3450, lng: 170.8260, type: 'spot',
+      time: '11:00', desc: '海滩上神秘的巨型球形岩石',
+      detail: '恐龙蛋般的巨大圆石散落在Koekohe海滩。\n形成于6000万年前海底沉积，地质奇观。\n免费景点，退潮时效果最佳（查潮汐表）。\n拍照建议：低角度拍出石的巨大感和海浪背景。\n停车场旁有cafe可以休息。',
+      gmap: 'Moeraki+Boulders+Beach'
+    },
+    {
+      name: 'Scotts Brewing Co 午餐 🍕', lat: -45.0980, lng: 170.9690, type: 'food',
+      time: '12:30', desc: '奥马鲁最受欢迎餐厅，手工披萨+精酿',
+      budget: '人均 20-30 NZD',
+      detail: 'Google Maps 4.5 · 600+ reviews。\n维多利亚建筑内的loft工业风。\n推荐：Wood-fired Pizza（柴火披萨）+ Tasting Paddle（精酿品鉴盘）。\n位置：Harbour Street历史街区。',
+      pay: { card: 1 },
+      gmap: 'Scotts+Brewing+Co+Oamaru'
+    },
+    {
+      name: '奥马鲁维多利亚街区 🏛️', lat: -45.0970, lng: 170.9700, type: 'spot',
+      time: '13:30', desc: '南半球保存最完好的维多利亚白石建筑群',
+      detail: '19世纪末淘金热留下的白石建筑群。\nHarbour Street + Tyne Street是精华区。\n复古店铺：旧书店、古董店、手工巧克力。\n蒸汽朋克风格与维多利亚建筑奇妙融合。',
+      gmap: 'Oamaru+Victorian+Precinct'
+    },
+    {
+      name: 'Steampunk HQ ⚙️', lat: -45.0980, lng: 170.9695, type: 'spot',
+      time: '14:30', desc: '蒸汽朋克博物馆，古怪有趣',
+      budget: '~10 NZD/人',
+      detail: '全世界独一无二的蒸汽朋克主题博物馆。\n门口巨大的蒸汽火车头装置是标志。\n内部有各种荒诞的蒸汽动力装置艺术。\n拍照出片率极高。',
+      gmap: 'Steampunk+HQ+Oamaru'
+    },
+    {
+      name: '基督城晚餐 🍽️', lat: -43.5310, lng: 172.6380, type: 'food',
+      time: '19:00', desc: 'Twenty Seven Steps，基督城No.1餐厅',
+      budget: '人均 35-50 NZD',
+      detail: 'Google Maps 4.7 · 900+ reviews，需提前预约。\n推荐：Roast Lamb Rump（烤羊臀肉）、Sticky Date Pudding。\n旅程最后一顿大餐，值得好好享受。\n或备选：Dux Central 精酿啤酒+休闲餐（人均20-28 NZD）。',
+      pay: { card: 1 },
+      gmap: 'Twenty+Seven+Steps+Christchurch',
+      reserve: 'https://www.twentysevensteps.co.nz/'
+    },
+    {
+      name: '基督城 Airbnb 🏠', lat: -43.4950, lng: 172.5600, type: 'hotel',
+      time: '20:30', desc: '机场附近，方便第二天还车',
+      budget: '~220 NZD/晚',
+      detail: '最后一晚建议选机场附近（Burnside/Avondale区）。\n人均：~315 RMB ✅。\n提前整理行李，检查护照和退税物品。\n还车前加满油（机场附近有Z加油站）。',
+      gmap: 'Burnside+Christchurch+Airbnb',
+      airbnb: 'https://www.airbnb.com/s/Christchurch-New-Zealand/homes?checkin=2026-10-05&checkout=2026-10-06&adults=3'
+    }
+  ]},
+
+  // ═══════════ Day 8 ═══════════
+  { id: 8, label: 'D8 返程', date: '10月6日 周一', title: '基督城 · 再见新西兰', color: D8, locations: [
+    {
+      name: '基督城机场 CHC', lat: -43.4894, lng: 172.5322, type: 'transport',
+      time: '出发', desc: '还车 → 登机 → 回家 ✈️',
+      detail: '还车前：加满油，清理车内垃圾。\n机场还车点跟着"Rental Car Return"标志。\n国际航班提前2小时到机场。\n免税店：推荐买Manuka蜂蜜、Whittaker\'s巧克力、Antipodes护肤品。',
+      gmap: 'Christchurch+Airport'
+    }
+  ]}
+];
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  Overview Tab Content                                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+function overviewContent() {
+  return `
+<div class="hero"><h1>🗺️ 新西兰南岛8天自驾</h1><p class="subtitle">基督城出发环中线 — 蒂卡波·库克山·瓦纳卡·箭镇·皇后镇</p></div>
+<div class="info-grid">
+  <div class="info-card"><div class="label">时间</div><div class="value">9.29 — 10.6<br>2026年</div></div>
+  <div class="info-card"><div class="label">人数</div><div class="value">3人<br>Airbnb整租</div></div>
+  <div class="info-card"><div class="label">住宿预算</div><div class="value">≤500 RMB/人/晚<br>≤116 NZD</div></div>
+  <div class="info-card"><div class="label">餐饮预算</div><div class="value">≤300 RMB/人/天<br>≤70 NZD</div></div>
+</div>
+<div class="section-head">行程概览</div>
+<div class="day-list">${DAYS.slice(1).map(d=>`<div class="card" onclick="go(${d.id})"><div class="name"><span class="dot" style="background:${d.color}"></span>${d.label} · ${d.title}</div><div class="desc">${d.date}</div></div>`).join('')}</div>
+<div class="section-head">出行须知</div>
+<div class="pay-summary">
+  <h4>🇳🇿 新西兰旅行贴士</h4>
+  <p><span class="ok-text">✅ 信用卡</span> — Visa/Mastercard 几乎100%覆盖，无需大量现金</p>
+  <p><span class="warn">⚠️ 支付宝/微信</span> — 仅极少数华人店支持，不可依赖</p>
+  <p><span class="ok-text">✅ 小费</span> — 新西兰无小费文化，不需要额外给小费</p>
+  <p><span class="warn">⚠️ 入境申报</span> — 任何食物、户外装备（登山鞋/帐篷）必须申报！</p>
+  <p><span class="ok-text">✅ 自来水</span> — 南岛自来水可直接饮用</p>
+  <p><span class="warn">⚠️ 驾驶</span> — 靠左行驶！右舵！环岛让右！单车道桥注意让行标志</p>
+</div>
+<div class="pay-summary">
+  <h4>🌤️ 10月初天气（春季）</h4>
+  <p>气温：8-18°C，早晚温差大</p>
+  <p>穿搭：防风防水外套 + 保暖中层 + 防晒霜（紫外线强！）</p>
+  <p>日照：日出~7:00，日落~19:30</p>
+</div>
+<div class="section-head">预估费用（3人合计）</div>
+<div class="info-grid">
+  <div class="info-card"><div class="label">7晚住宿</div><div class="value">~1,670 NZD<br>人均 2,394 RMB</div></div>
+  <div class="info-card"><div class="label">8天餐饮</div><div class="value">~1,000 NZD<br>人均 1,433 RMB</div></div>
+  <div class="info-card"><div class="label">租车+油费</div><div class="value">~740 NZD<br>人均 1,061 RMB</div></div>
+  <div class="info-card"><div class="label">总计（不含机票）</div><div class="value">~3,410 NZD<br>人均 ~4,888 RMB</div></div>
+</div>
+<div class="section-head">图例</div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--tint-red)"></div>餐厅</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--tint-blue)"></div>景点</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--tint-orange)"></div>住宿</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--tint-purple)"></div>酒吧/饮品</div>
+</div>`;
+}
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ENGINE                                                      ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const map = L.map('map', { center: [-43.7, 171.0], zoom: 7, zoomControl: false, attributionControl: true });
+L.control.zoom({ position: 'topright' }).addTo(map);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+const LocateControl = L.Control.extend({
+  options: { position: 'bottomright' },
+  onAdd() {
+    const btn = L.DomUtil.create('button', 'locate-btn');
+    btn.innerHTML = '📍';
+    btn.title = '我的位置';
+    L.DomEvent.disableClickPropagation(btn);
+    btn.addEventListener('click', () => {
+      btn.classList.add('active');
+      map.locate({ setView: true, maxZoom: 15 });
+    });
+    this._btn = btn;
+    return btn;
+  }
+});
+new LocateControl().addTo(map);
+let locMarker, locCircle;
+map.on('locationfound', e => {
+  const r = e.accuracy / 2;
+  if (locMarker) { locMarker.setLatLng(e.latlng); locCircle.setLatLng(e.latlng).setRadius(r); }
+  else {
+    locMarker = L.marker(e.latlng, {
+      icon: L.divIcon({ className:'', html:'<div style="width:14px;height:14px;border-radius:50%;background:#007aff;border:2.5px solid #fff;box-shadow:0 0 6px rgba(0,122,255,.5)"></div><div class="loc-pulse" style="position:absolute;top:0;left:0"></div>', iconSize:[14,14], iconAnchor:[7,7] }),
+      zIndexOffset: 2000
+    }).addTo(map);
+    locCircle = L.circle(e.latlng, { radius: r, color: '#007aff', fillColor: '#007aff', fillOpacity: .08, weight: 1 }).addTo(map);
+  }
+});
+map.on('locationerror', () => {});
+
+function icon(color, emoji) {
+  return L.divIcon({ className: '', html: `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.18)">${emoji||''}</div>`, iconSize: [28,28], iconAnchor: [14,14], popupAnchor: [0,-16] });
+}
+
+if (HOTEL.lat) L.marker([HOTEL.lat, HOTEL.lng], { icon: icon('#ff9500','🏨'), zIndexOffset: 1000 }).addTo(map).bindPopup(`<b>${HOTEL.name}</b>`);
+
+let markers = [], polylines = [];
+const emojis = { food:'🍽️', spot:'📍', hotel:'🏨', transport:'🚗', drink:'🍺' };
+
+function clearMap() { markers.forEach(m=>map.removeLayer(m)); polylines.forEach(p=>map.removeLayer(p)); markers=[]; polylines=[]; }
+
+function showDay(idx) {
+  clearMap();
+  if (idx === 0) {
+    const pts = [];
+    DAYS.forEach(d => d.locations.forEach(l => { if(l.lat) pts.push([l.lat,l.lng]); }));
+    // Add route polyline for overview
+    const routePts = [];
+    DAYS.slice(1).forEach(d => {
+      d.locations.filter(l => l.time !== '—' && l.type !== 'food').forEach(l => {
+        if (l.lat) routePts.push([l.lat, l.lng]);
+      });
+    });
+    if (routePts.length > 1) {
+      const pl = L.polyline(routePts, { color: '#0071e3', weight: 3, opacity: .35, dashArray: '8,5' }).addTo(map);
+      polylines.push(pl);
+    }
+    if(pts.length) map.fitBounds(pts, {padding:[30,30]});
+    DAYS.slice(1).forEach(d => {
+      d.locations.filter(l=>l.time!=='—').forEach(l => {
+        const m = L.circleMarker([l.lat,l.lng], { radius:4, fillColor:d.color, color:'#fff', weight:1.5, fillOpacity:.9 }).addTo(map).bindPopup(`<b>${l.name}</b><br><span style="color:#86868b">${d.label}</span>`);
+        markers.push(m);
+      });
+    });
+    return;
+  }
+  const day = DAYS.find(d=>d.id===idx);
+  if(!day) return;
+  const coords = [];
+  day.locations.forEach(l => {
+    if(!l.lat) return;
+    const m = L.marker([l.lat,l.lng], { icon: icon(day.color, emojis[l.type]||'📌') }).addTo(map);
+    const gmapQ = l.gmap||encodeURIComponent(l.name+' New Zealand');
+    m.bindPopup(`<b>${l.name}</b>${l.time!=='—'?`<br><span style="color:#86868b">${l.time}</span>`:''}<br>${l.desc}${l.budget?`<br><span style="color:#ff9500">${l.budget}</span>`:''}<br><a href="#" onclick="event.preventDefault();openAS('${l.name.replace(/'/g,"\\'")}',${l.lat},${l.lng},'${gmapQ}')">📍 导航</a>`);
+    markers.push(m);
+    if(l.time!=='—') coords.push([l.lat,l.lng]);
+  });
+  if(coords.length>1) { const pl = L.polyline(coords, { color:day.color, weight:2.5, opacity:.5, dashArray:'6,5' }).addTo(map); polylines.push(pl); }
+  if(coords.length) map.fitBounds(coords, { padding:[40,40], maxZoom:13 });
+}
+
+// ══════════ RENDER ══════════
+function payChips(pay) {
+  if(!pay) return '';
+  let h = '<div class="pays">';
+  const m = { card:'💳', pay:'💴', alipay:'支付宝', wechat:'微信' };
+  for(const [k,label] of Object.entries(m)) {
+    if(pay[k]!==undefined) { const c = pay[k]===1?'ok':pay[k]===0.5?'idk':'no'; h += `<span class="pay ${c}">${label}</span>`; }
+  }
+  return h+'</div>';
+}
+
+function locCard(loc, dayIdx) {
+  const dot = loc.type==='food'?'food':loc.type==='spot'?'spot':loc.type==='drink'?'drink':loc.type==='hotel'?'hotel':'transport';
+  const bdg = loc.type==='food'?'<span class="badge food">餐</span>':loc.type==='spot'?'<span class="badge spot">景</span>':loc.type==='drink'?'<span class="badge drink">饮</span>':loc.type==='hotel'?'<span class="badge hotel">宿</span>':'';
+  const uid = `d${dayIdx}-${loc.name.replace(/\W/g,'')}`;
+  const gmapQ = loc.gmap||encodeURIComponent(loc.name+' New Zealand');
+  let lnk = `<button class="btn nav" onclick="openAS('${loc.name.replace(/'/g,"\\'")}',${loc.lat},${loc.lng},'${gmapQ}')">📍 导航</button>`;
+  if(loc.xhs) lnk += `<a href="${loc.xhs}" target="_blank" class="btn xhs">📕 小红书</a>`;
+  if(loc.reserve) lnk += `<a href="${loc.reserve}" target="_blank" class="btn rsv">📅 预约</a>`;
+  if(loc.airbnb) lnk += `<a href="${loc.airbnb}" target="_blank" class="btn airbnb">🏠 订房</a>`;
+  return `<div class="tl-item"><div class="tl-dot ${dot}"></div><div class="card" onclick="if(!event.target.closest('.btn,.links'))toggle('${uid}')"><div class="time">${loc.time!=='—'?loc.time:'备选'}</div><div class="name">${bdg} ${loc.name}</div><div class="desc">${loc.desc}</div>${loc.budget?'<div class="budget">'+loc.budget+'</div>':''}${payChips(loc.pay)}<div class="links">${lnk}</div>${loc.detail?'<div class="details closed" id="'+uid+'">'+loc.detail.replace(/\n/g,'<br>')+'</div>':''}</div></div>`;
+}
+
+function renderDay(idx) {
+  const d = DAYS.find(x=>x.id===idx); if(!d) return '';
+  const main = d.locations.filter(l=>l.time!=='—');
+  const alt = d.locations.filter(l=>l.time==='—');
+  let h = `<div class="day-head"><h2>${d.title}</h2><p>${d.date}</p></div>`;
+  if(main.length) { h += '<div class="section-head">行程</div><div class="timeline">'; main.forEach(l => h += locCard(l, idx)); h += '</div>'; }
+  if(alt.length) { h += '<div class="section-head">备选</div><div class="timeline">'; alt.forEach(l => h += locCard(l, idx)); h += '</div>'; }
+  return h;
+}
+
+// ══════════ NAV ══════════
+let cur = 0;
+const tabsEl = document.getElementById('tabs');
+const contentEl = document.getElementById('content');
+
+DAYS.forEach(d => {
+  const btn = document.createElement('button');
+  btn.className = 'tab' + (d.id===0?' active':'');
+  btn.dataset.day = d.id;
+  btn.textContent = d.label;
+  tabsEl.appendChild(btn);
+});
+
+function go(idx) {
+  cur = idx;
+  tabsEl.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', +t.dataset.day===idx));
+  contentEl.innerHTML = idx===0 ? overviewContent() : renderDay(idx);
+  showDay(idx);
+  contentEl.scrollTo({top:0});
+  const tab = tabsEl.querySelector(`[data-day="${idx}"]`);
+  if(tab) tab.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+}
+
+function toggle(id) { const el=document.getElementById(id); if(el) el.classList.toggle('closed'); }
+
+tabsEl.addEventListener('click', e => { const t=e.target.closest('.tab'); if(t) go(+t.dataset.day); });
+
+go(0);
+
+/* ── Action Sheet for Navigation ── */
+const asOverlay = document.createElement('div');
+asOverlay.className = 'as-overlay';
+asOverlay.innerHTML = `<div class="as-sheet">
+  <div class="as-group" id="as-opts"></div>
+  <div class="as-group"><button class="as-item as-cancel" onclick="closeAS()">取消</button></div>
+</div>`;
+document.body.appendChild(asOverlay);
+asOverlay.addEventListener('click', e => { if (e.target === asOverlay) closeAS(); });
+
+function openAS(name, lat, lng, gmap) {
+  const q = gmap || encodeURIComponent(name + ' New Zealand');
+  const encName = encodeURIComponent(name);
+  const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+  const appleUrl = `https://maps.apple.com/?q=${lat},${lng}&ll=${lat},${lng}&name=${encName}`;
+  document.getElementById('as-opts').innerHTML =
+    `<button class="as-item" onclick="window.open('${googleUrl}');closeAS()">🗺️ Google Maps</button>` +
+    `<button class="as-item" onclick="window.open('${appleUrl}');closeAS()">🍎 Apple Maps</button>`;
+  asOverlay.classList.add('show');
+}
+function closeAS() { asOverlay.classList.remove('show'); }
+</script>
+</body>
+</html>

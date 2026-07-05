@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>上海4日游 · 行程地图</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* ===== Apple Design System ===== */
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f2f2f7;
+      --bg-tertiary: #e5e5ea;
+      --bg-grouped: #f2f2f7;
+      --bg-elevated: #ffffff;
+      --text-primary: #1c1c1e;
+      --text-secondary: #3a3a3c;
+      --text-tertiary: #8e8e93;
+      --separator: #c6c6c8;
+      --accent: #0071e3;
+      --accent-pressed: #0058b0;
+      --cat-food: #ff3b30;
+      --cat-spot: #ff9500;
+      --cat-drink: #af52de;
+      --cat-hotel: #34c759;
+      --cat-transport: #5ac8fa;
+      --radius-card: 16px;
+      --radius-chip: 20px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
+      --shadow-sheet: 0 -4px 24px rgba(0,0,0,0.12);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Map Container ===== */
+    #map {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 12px 16px 10px;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 0.5px solid var(--separator);
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.4px;
+    }
+    .header .subtitle {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* ===== Locate Button ===== */
+    .locate-btn {
+      position: fixed;
+      right: 16px;
+      bottom: calc(380px + var(--safe-bottom));
+      z-index: 50;
+      width: 44px; height: 44px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .locate-btn:active { transform: scale(0.92); }
+    .locate-btn svg { width: 22px; height: 22px; }
+
+    /* ===== Bottom Sheet ===== */
+    .bottom-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 200;
+      max-width: 500px;
+      margin: 0 auto;
+      background: var(--bg-grouped);
+      border-radius: 20px 20px 0 0;
+      box-shadow: var(--shadow-sheet);
+      max-height: 78vh;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .sheet-handle {
+      width: 36px; height: 5px;
+      background: var(--bg-tertiary);
+      border-radius: 3px;
+      margin: 8px auto 6px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* ===== Tabs ===== */
+    .tabs-wrap {
+      flex-shrink: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 12px 8px;
+    }
+    .tabs-wrap::-webkit-scrollbar { display: none; }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      width: max-content;
+    }
+
+    .tab {
+      padding: 7px 16px;
+      border-radius: var(--radius-chip);
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ===== Cards Container ===== */
+    .cards-container {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 16px 16px;
+      flex: 1;
+    }
+    .cards-container::-webkit-scrollbar { width: 0; }
+
+    /* ===== Overview Card ===== */
+    .overview-card {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-card);
+    }
+    .overview-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .overview-card .meta {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+    .overview-stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-pill {
+      flex: 1;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-pill .num {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat-pill .label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+    .overview-tips {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .overview-tips .tip-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .overview-tips .tip-icon { flex-shrink: 0; margin-top: 1px; }
+    .payment-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    /* ===== Timeline Cards ===== */
+    .timeline-card {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-card);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      padding: 14px 16px 6px;
+      gap: 12px;
+    }
+
+    .card-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+    }
+
+    .card-body { flex: 1; min-width: 0; }
+
+    .card-time {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      letter-spacing: 0.3px;
+    }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    .card-type-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      padding: 0 16px 10px 40px;
+    }
+
+    .card-detail {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+      padding: 0 16px 10px 40px;
+      white-space: pre-line;
+    }
+
+    .card-budget {
+      font-size: 13px;
+      color: var(--cat-food);
+      font-weight: 500;
+      padding: 0 16px 8px 40px;
+    }
+
+    /* Payment chips */
+    .pay-chips {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      padding: 0 16px 10px 40px;
+    }
+    .pay-chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .pay-chip.yes { background: rgba(52,199,89,0.12); color: #248a3d; }
+    .pay-chip.maybe { background: rgba(255,149,0,0.12); color: #c93400; }
+
+    /* Card Links */
+    .card-links {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 14px 40px;
+      flex-wrap: wrap;
+    }
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border-radius: var(--radius-chip);
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .link-btn:active { transform: scale(0.95); }
+    .link-btn svg { width: 14px; height: 14px; }
+    .link-nav { background: var(--bg-tertiary); color: var(--text-primary); }
+    .link-xhs { background: rgba(254,44,85,0.08); color: #fe2c55; }
+    .link-dp { background: rgba(255,170,0,0.1); color: #d97700; }
+    .link-reserve { background: rgba(0,113,227,0.08); color: var(--accent); }
+
+    /* ===== Action Sheet (Navigation) ===== */
+    .action-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .action-sheet-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .action-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 501;
+      max-width: 500px;
+      margin: 0 auto;
+      background: rgba(242,242,247,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      padding-bottom: var(--safe-bottom);
+    }
+    .action-sheet.show { transform: translateY(0); }
+
+    .action-sheet .title-bar {
+      text-align: center;
+      padding: 14px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+      border-bottom: 0.5px solid var(--separator);
+    }
+
+    .action-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 0.5px solid var(--separator);
+      text-decoration: none;
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.8);
+    }
+    .action-item:active { background: var(--bg-tertiary); }
+    .action-item .icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .action-item .label {
+      font-size: 17px;
+      font-weight: 400;
+    }
+
+    .action-cancel {
+      display: block;
+      text-align: center;
+      padding: 16px;
+      margin-top: 8px;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(255,255,255,0.9);
+      text-decoration: none;
+    }
+
+    /* ===== Leaflet Customizations ===== */
+    .leaflet-container { background: #e8e8ed; }
+    .custom-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      transition: transform 0.2s;
+    }
+    .custom-marker:hover { transform: scale(1.15); }
+    .custom-marker.active {
+      transform: scale(1.3);
+      z-index: 1000 !important;
+    }
+
+    .hotel-marker {
+      width: 32px; height: 32px;
+      background: var(--cat-hotel);
+      font-size: 16px;
+    }
+
+    /* Route line */
+    .route-line {
+      stroke-dasharray: 0;
+    }
+
+    /* ===== Responsive ===== */
+    @media (min-width: 501px) {
+      .bottom-sheet { max-width: 480px; }
+    }
+
+    /* ===== Empty state ===== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>上海4日游</h1>
+    <div class="subtitle">2026.03.15 — 2026.03.18 · 行程参考地图</div>
+  </div>
+
+  <!-- Locate Button -->
+  <div class="locate-btn" onclick="locateMe()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+    </svg>
+  </div>
+
+  <!-- Bottom Sheet -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle" onclick="toggleSheet()"></div>
+
+    <!-- Tabs -->
+    <div class="tabs-wrap">
+      <div class="tabs" id="tabs"></div>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards-container" id="cardsContainer"></div>
+  </div>
+
+  <!-- Action Sheet for Navigation -->
+  <div class="action-sheet-overlay" id="actionOverlay" onclick="closeActionSheet()"></div>
+  <div class="action-sheet" id="actionSheet">
+    <div class="title-bar">导航到此位置</div>
+    <div id="actionItems"></div>
+    <a class="action-cancel" onclick="closeActionSheet()">取消</a>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ===== WebView Detection =====
+    const UA = navigator.userAgent.toLowerCase();
+    const IN_APP_WEBVIEW = /micromessenger|xhsdiscover|snssdk1128|weibo|alipay|dingtalk|lark|feishu/.test(UA);
+
+    // ===== Hotel =====
+    const HOTEL = {
+      name: '上海外滩茂悦大酒店',
+      lat: 31.2456,
+      lng: 121.4906
+    };
+
+    // ===== Trip Data =====
+    const DAYS = [
+      {
+        id: 'overview',
+        label: '总览',
+        color: '#0071e3',
+        isOverview: true,
+        locations: []
+      },
+      {
+        id: 'day1',
+        label: 'Day 1 · 外滩经典',
+        color: '#ff9500',
+        locations: [
+          {
+            name: '上海外滩茂悦大酒店',
+            lat: 31.2456, lng: 121.4906,
+            type: 'hotel', time: '14:00',
+            desc: '入住酒店，放下行李稍作休息',
+            detail: '地址：黄浦路199号\n提示：提前在App上办理在线选房，到店直接取房卡'
+          },
+          {
+            name: '南京路步行街',
+            lat: 31.2336, lng: 121.4766,
+            type: 'spot', time: '15:30',
+            desc: '中华商业第一街，从外滩一路逛到人民广场方向',
+            detail: '建议路线：外滩 → 南京东路 → 人民广场\n全程约1.5km，步行20分钟'
+          },
+          {
+            name: '外滩夜景',
+            lat: 31.2397, lng: 121.4906,
+            type: 'spot', time: '18:00',
+            desc: '万国建筑博览群亮灯，最佳拍摄时间为日落后30分钟',
+            detail: '推荐拍摄点：陈毅广场附近\n最佳时间：17:30-18:30（蓝调时刻）\n天气敏感：雨天效果大打折扣'
+          },
+          {
+            name: '上海老饭店',
+            lat: 31.2271, lng: 121.4922,
+            type: 'food', time: '19:30',
+            desc: '百年本帮菜老字号，八宝鸭和油爆虾是招牌',
+            budget: '¥200/人',
+            pay: { cash: 1, card: 1, alipay: 1, wechat: 1 },
+            detail: '招牌菜：八宝鸭、油爆虾、虾子大乌参\n排队提示：周末需等位30-60分钟，建议提前取号\n口味：正宗本帮浓油赤酱，偏甜',
+            dianping: 'https://www.dianping.com/search/keyword/1/0_上海老饭店',
+            dianpingKeyword: '上海老饭店',
+            gmap: 'https://maps.apple.com/?ll=31.2271,121.4922'
+          }
+        ]
+      },
+      {
+        id: 'day2',
+        label: 'Day 2 · 豫园老城',
+        color: '#ff3b30',
+        locations: [
+          {
+            name: '豫园',
+            lat: 31.2273, lng: 121.4920,
+            type: 'spot', time: '09:00',
+            desc: '明代古典园林，江南三大名园之一',
+            detail: '门票：¥40（旺季）/ ¥30（淡季）\n游览时间：约2小时\n建议：早上去人少，光线好\n注意：园内九曲桥弯多，注意脚下安全'
+          },
+          {
+            name: '城隍庙小吃',
+            lat: 31.2271, lng: 121.4922,
+            type: 'food', time: '11:30',
+            desc: '南翔小笼包、蟹壳黄、排骨年糕，老上海味道集中地',
+            budget: '¥80/人',
+            pay: { cash: 1, alipay: 1, wechat: 1 },
+            detail: '推荐：南翔馒头店（一楼外卖窗口最快）\n       蟹壳黄（城隍庙小吃广场）\n       排骨年糕（鲜得来）\n提示：避开12点高峰，11:30前或13:00后去',
+            dianping: 'https://www.dianping.com/search/keyword/1/0_城隍庙小吃',
+            dianpingKeyword: '城隍庙 小吃'
+          },
+          {
+            name: '田子坊',
+            lat: 31.2089, lng: 121.4668,
+            type: 'spot', time: '14:00',
+            desc: '弄堂里的文艺聚集地，手作小店和画廊林立',
+            detail: '游览时间：约1.5小时\n适合：拍照、逛小店、喝咖啡\n注意：周末人很多，工作日体验更好'
+          },
+          {
+            name: '新天地',
+            lat: 31.2226, lng: 121.4658,
+            type: 'drink', time: '17:00',
+            desc: '石库门建筑群改造的时尚地标，下午茶或小酌',
+            budget: '¥150/人',
+            pay: { cash: 1, card: 1, alipay: 1, wechat: 1 },
+            detail: '推荐：石库门酒吧一条街\n      新天地北里咖啡区\n氛围：中西合璧，适合拍照打卡',
+            gmap: 'https://maps.apple.com/?ll=31.2226,121.4658'
+          },
+          {
+            name: '上海外婆家（新天地店）',
+            lat: 31.2228, lng: 121.4660,
+            type: 'food', time: '19:00',
+            desc: '性价比杭帮菜，茶香鸡和酸菜鱼是必点',
+            budget: '¥100/人',
+            pay: { cash: 1, alipay: 1, wechat: 1 },
+            detail: '必点：茶香鸡、麻婆豆腐、酸菜鱼\n排队：周末高峰需等位40分钟+，建议17:30前到\n口味：杭帮菜，偏清淡，适合大多数人',
+            dianping: 'https://www.dianping.com/search/keyword/1/0_外婆家新天地',
+            dianpingKeyword: '外婆家 新天地'
+          }
+        ]
+      },
+      {
+        id: 'day3',
+        label: 'Day 3 · 陆家嘴现代',
+        color: '#5ac8fa',
+        locations: [
+          {
+            name: '东方明珠塔',
+            lat: 31.2397, lng: 121.4998,
+            type: 'spot', time: '09:30',
+            desc: '上海地标，登塔俯瞰浦江两岸全景',
+            detail: '门票：¥120（三球联票）/ ¥80（二球）\n游览时间：约2.5小时\n建议：提前在网上购票，免排队\n注意：雾天能见度低，查看天气预报再决定'
+          },
+          {
+            name: '上海海洋水族馆',
+            lat: 31.2378, lng: 121.5050,
+            type: 'spot', time: '13:00',
+            desc: '亚洲最大海洋水族馆之一，155米海底隧道震撼',
+            detail: '门票：¥160\n游览时间：约2小时\n亮点：海底隧道、企鹅展区\n适合：亲子游、拍照'
+          },
+          {
+            name: '正大广场午餐',
+            lat: 31.2365, lng: 121.5045,
+            type: 'food', time: '12:00',
+            desc: '陆家嘴最大购物中心，餐饮选择丰富',
+            budget: '¥120/人',
+            pay: { cash: 1, card: 1, alipay: 1, wechat: 1 },
+            detail: '推荐：鼎泰丰（小笼包）、板长寿司、望湘园\n选择多，适合多人不同口味\n提示：工作日午餐时段人多，建议11:30前到'
+          },
+          {
+            name: '上海中心大厦观景台',
+            lat: 31.2355, lng: 121.5055,
+            type: 'spot', time: '15:30',
+            desc: '中国第一高楼，546米高空俯瞰上海全景',
+            detail: '门票：¥180\n游览时间：约1.5小时\n最佳时间：日落前1小时上去，可看日落+夜景\n注意：高空风大，带件薄外套'
+          },
+          {
+            name: '滨江大道夜景',
+            lat: 31.2345, lng: 121.5030,
+            type: 'spot', time: '18:00',
+            desc: '从浦东看浦西外滩夜景，比外滩人少视角更好',
+            detail: '推荐位置：明珠公园旁滨江步道\n最佳时间：日落后30分钟\n提示：有座椅可以坐下来慢慢欣赏'
+          }
+        ]
+      },
+      {
+        id: 'day4',
+        label: 'Day 4 · 文化收官',
+        color: '#af52de',
+        locations: [
+          {
+            name: '静安寺',
+            lat: 31.2236, lng: 121.4486,
+            type: 'spot', time: '09:00',
+            desc: '千年古刹，闹市中的净土，金顶在阳光下格外耀眼',
+            detail: '门票：¥50\n游览时间：约1小时\n建议：早上人少，光线好，适合拍照\n注意：进入大殿需脱帽，保持安静'
+          },
+          {
+            name: '上海美术馆（原跑马总会）',
+            lat: 31.2289, lng: 121.4766,
+            type: 'spot', time: '10:30',
+            desc: '历史建筑里的当代艺术，免费参观',
+            detail: '门票：免费（需预约）\n游览时间：约1.5小时\n预约：微信小程序「上海美术馆」\n注意：周一闭馆'
+          },
+          {
+            name: '武康路City Walk',
+            lat: 31.2185, lng: 121.4350,
+            type: 'spot', time: '13:00',
+            desc: '法租界老洋房街区，武康大楼是必打卡点',
+            detail: '路线：武康大楼 → 巴金故居 → 宋庆龄故居 → 武康庭\n全程约2km，步行30分钟\n适合：拍照、看建筑、喝咖啡\n提示：周末人多，工作日更出片'
+          },
+          {
+            name: '武康庭下午茶',
+            lat: 31.2180, lng: 121.4340,
+            type: 'drink', time: '15:00',
+            desc: '老洋房里的精品咖啡和下午茶，氛围拉满',
+            budget: '¥120/人',
+            pay: { cash: 1, card: 1, alipay: 1, wechat: 1 },
+            detail: '推荐：Coffee Tree（武康庭内）\n      Farine（面包房，已搬迁至武康路）\n氛围：法式花园庭院，适合坐下来聊天\n提示：周末需等位'
+          },
+          {
+            name: '上海虹桥站',
+            lat: 31.1942, lng: 121.3194,
+            type: 'transport', time: '17:30',
+            desc: '返程高铁，建议提前40分钟到站',
+            detail: '交通：地铁10号线直达，约40分钟\n提示：虹桥站较大，提前确认检票口\n注意：预留安检排队时间（高峰10-15分钟）'
+          }
+        ]
+      }
+    ];
+
+    // ===== Init Map =====
+    const map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+      tap: true
+    }).setView([31.2304, 121.4737], 13);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd'
+    }).addTo(map);
+
+    // Zoom control bottom-left
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+    // ===== Markers =====
+    const allMarkers = [];
+    const routeLines = [];
+
+    function typeColor(type) {
+      const colors = { food: '#ff3b30', spot: '#ff9500', drink: '#af52de', hotel: '#34c759', transport: '#5ac8fa' };
+      return colors[type] || '#8e8e93';
+    }
+
+    function typeIcon(type) {
+      const icons = { food: '🍜', spot: '📍', drink: '☕', hotel: '🏨', transport: '🚄' };
+      return icons[type] || '📍';
+    }
+
+    function typeLabel(type) {
+      const labels = { food: '美食', spot: '景点', drink: '饮品', hotel: '酒店', transport: '交通' };
+      return labels[type] || '地点';
+    }
+
+    function createMarker(loc, dayColor) {
+      const color = typeColor(loc.type);
+      const size = loc.type === 'hotel' ? 32 : 28;
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="custom-marker" style="width:${size}px;height:${size}px;background:${color};font-size:${size*0.5}px">${typeIcon(loc.type)}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+
+      const marker = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
+      marker.bindPopup(`<strong>${loc.name}</strong><br><span style="font-size:12px;color:#8e8e93">${typeLabel(loc.type)}${loc.time ? ' · ' + loc.time : ''}</span>`, {
+        offset: [0, -size/2]
+      });
+      marker._locationData = loc;
+      return marker;
+    }
+
+    function clearMapOverlays() {
+      allMarkers.forEach(m => map.removeLayer(m));
+      allMarkers.length = 0;
+      routeLines.forEach(l => map.removeLayer(l));
+      routeLines.length = 0;
+    }
+
+    function renderDayMarkers(day) {
+      clearMapOverlays();
+
+      // Hotel marker (always show)
+      const hotelIcon = L.divIcon({
+        className: '',
+        html: `<div class="custom-marker hotel-marker">🏨</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+      const hotelMarker = L.marker([HOTEL.lat, HOTEL.lng], { icon: hotelIcon }).addTo(map);
+      hotelMarker.bindPopup(`<strong>${HOTEL.name}</strong><br><span style="font-size:12px;color:#8e8e93">酒店 · 住宿</span>`);
+      allMarkers.push(hotelMarker);
+
+      if (day.isOverview) {
+        // Show all day markers with different colors
+        DAYS.filter(d => !d.isOverview).forEach(d => {
+          const latlngs = [];
+          d.locations.forEach(loc => {
+            if (loc.type === 'hotel') return;
+            const m = createMarker(loc, d.color);
+            allMarkers.push(m);
+            latlngs.push([loc.lat, loc.lng]);
+          });
+          if (latlngs.length > 1) {
+            const line = L.polyline(latlngs, {
+              color: d.color,
+              weight: 2,
+              opacity: 0.4,
+              dashArray: '5, 8'
+            }).addTo(map);
+            routeLines.push(line);
+          }
+        });
+
+        // Fit all markers
+        const allLatLngs = [[HOTEL.lat, HOTEL.lng]];
+        DAYS.filter(d => !d.isOverview).forEach(d => {
+          d.locations.forEach(loc => allLatLngs.push([loc.lat, loc.lng]));
+        });
+        map.fitBounds(allLatLngs, { padding: [60, 60, 60, 400] });
+      } else {
+        // Show single day markers + route
+        const latlngs = [[HOTEL.lat, HOTEL.lng]];
+        day.locations.forEach(loc => {
+          if (loc.type === 'hotel') return;
+          const m = createMarker(loc, day.color);
+          allMarkers.push(m);
+          latlngs.push([loc.lat, loc.lng]);
+        });
+
+        // Draw route
+        if (latlngs.length > 1) {
+          const line = L.polyline(latlngs, {
+            color: day.color,
+            weight: 3,
+            opacity: 0.6,
+            dashArray: '8, 6'
+          }).addTo(map);
+          routeLines.push(line);
+        }
+
+        // Fit bounds
+        map.fitBounds(latlngs, { padding: [60, 60, 60, 380] });
+      }
+    }
+
+    // ===== Overview Content =====
+    function overviewContent() {
+      const totalSpots = DAYS.filter(d => !d.isOverview).reduce((sum, d) => sum + d.locations.filter(l => l.type !== 'hotel').length, 0);
+      const totalFood = DAYS.filter(d => !d.isOverview).reduce((sum, d) => sum + d.locations.filter(l => l.type === 'food').length, 0);
+      const totalBudget = 1200;
+
+      return `
+        <div class="overview-card">
+          <h2>上海4日游</h2>
+          <div class="meta">2026年3月15日 — 3月18日 · 春季出行</div>
+
+          <div class="overview-stats">
+            <div class="stat-pill">
+              <div class="num">4</div>
+              <div class="label">行程天数</div>
+            </div>
+            <div class="stat-pill">
+              <div class="num">${totalSpots}</div>
+              <div class="label">游览景点</div>
+            </div>
+            <div class="stat-pill">
+              <div class="num">${totalFood}</div>
+              <div class="label">美食打卡</div>
+            </div>
+          </div>
+
+          <div class="overview-tips">
+            <div class="tip-row">
+              <span class="tip-icon">🏨</span>
+              <span><strong>住宿</strong>：上海外滩茂悦大酒店，位于黄浦江北外滩，步行5分钟到南京路和外滩</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon">🚇</span>
+              <span><strong>交通</strong>：以地铁+步行为主，Day 3 陆家嘴可乘轮渡横渡黄浦江（¥2）</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon">💰</span>
+              <span><strong>预算</strong>：预计人均 ¥${totalBudget}（不含住宿和交通）</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon">🌦️</span>
+              <span><strong>天气</strong>：3月上海平均气温 8-15°C，建议带薄外套，备雨具</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon">📱</span>
+              <span><strong>支付</strong>：支付宝/微信全覆盖，部分老字号仅收现金</span>
+            </div>
+          </div>
+
+          <div class="payment-row">
+            <span class="pay-chip yes">✓ 支付宝</span>
+            <span class="pay-chip yes">✓ 微信支付</span>
+            <span class="pay-chip yes">✓ 信用卡</span>
+            <span class="pay-chip maybe">? 现金（部分老店）</span>
+          </div>
+        </div>
+
+        <div class="overview-card">
+          <h2 style="font-size:18px">行程概览</h2>
+          <div class="overview-tips" style="margin-top:12px">
+            <div class="tip-row">
+              <span class="tip-icon" style="color:#ff9500">●</span>
+              <span><strong>Day 1 · 外滩经典</strong>：南京路 → 外滩夜景 → 本帮菜</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon" style="color:#ff3b30">●</span>
+              <span><strong>Day 2 · 豫园老城</strong>：豫园 → 城隍庙小吃 → 田子坊 → 新天地</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon" style="color:#5ac8fa">●</span>
+              <span><strong>Day 3 · 陆家嘴现代</strong>：东方明珠 → 海洋馆 → 上海中心 → 滨江夜景</span>
+            </div>
+            <div class="tip-row">
+              <span class="tip-icon" style="color:#af52de">●</span>
+              <span><strong>Day 4 · 文化收官</strong>：静安寺 → 美术馆 → 武康路 → 返程</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== Render Cards =====
+    function renderCards(day) {
+      const container = document.getElementById('cardsContainer');
+
+      if (day.isOverview) {
+        container.innerHTML = overviewContent();
+        return;
+      }
+
+      let html = '';
+      day.locations.forEach((loc, idx) => {
+        const color = typeColor(loc.type);
+        html += `<div class="timeline-card" data-idx="${idx}">`;
+        html += `  <div class="card-header">`;
+        html += `    <div class="card-dot" style="background:${color}"></div>`;
+        html += `    <div class="card-body">`;
+        html += `      <div class="card-time">${loc.time || '—'}</div>`;
+        html += `      <div class="card-name">${loc.name}</div>`;
+        html += `      <span class="card-type-badge" style="background:${color}1a;color:${color}">${typeLabel(loc.type)}</span>`;
+        html += `    </div>`;
+        html += `  </div>`;
+
+        if (loc.desc) {
+          html += `  <div class="card-desc">${loc.desc}</div>`;
+        }
+        if (loc.detail) {
+          html += `  <div class="card-detail">${loc.detail}</div>`;
+        }
+        if (loc.budget) {
+          html += `  <div class="card-budget">💰 ${loc.budget}</div>`;
+        }
+
+        // Payment chips
+        if (loc.pay) {
+          html += `  <div class="pay-chips">`;
+          if (loc.pay.cash) html += `<span class="pay-chip ${loc.pay.cash === 1 ? 'yes' : 'maybe'}">${loc.pay.cash === 1 ? '✓' : '?'} 现金</span>`;
+          if (loc.pay.card) html += `<span class="pay-chip ${loc.pay.card === 1 ? 'yes' : 'maybe'}">${loc.pay.card === 1 ? '✓' : '?'} 信用卡</span>`;
+          if (loc.pay.alipay) html += `<span class="pay-chip ${loc.pay.alipay === 1 ? 'yes' : 'maybe'}">${loc.pay.alipay === 1 ? '✓' : '?'} 支付宝</span>`;
+          if (loc.pay.wechat) html += `<span class="pay-chip ${loc.pay.wechat === 1 ? 'yes' : 'maybe'}">${loc.pay.wechat === 1 ? '✓' : '?'} 微信</span>`;
+          html += `  </div>`;
+        }
+
+        // Links
+        const links = [];
+        // Navigation button
+        links.push(`<a class="link-btn link-nav" onclick="openNavSheet(${loc.lat},${loc.lng},'${loc.name.replace(/'/g, "\\'")}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>导航</a>`);
+
+        if (loc.dianping) {
+          const dpUrl = IN_APP_WEBVIEW
+            ? `https://www.dianping.com/search/keyword/1/0_${encodeURIComponent(loc.dianpingKeyword || loc.name)}`
+            : `dianping://searchshop?keyword=${encodeURIComponent(loc.dianpingKeyword || loc.name)}`;
+          links.push(`<a class="link-btn link-dp" href="${dpUrl}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6l-2 4h4l-2 4" fill="currentColor"/></svg>点评</a>`);
+        }
+
+        if (loc.xhs || loc.xhsKeyword) {
+          const xhsUrl = IN_APP_WEBVIEW
+            ? `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(loc.xhsKeyword || loc.name)}`
+            : `xhsdiscover://search_result?keyword=${encodeURIComponent(loc.xhsKeyword || loc.name)}`;
+          links.push(`<a class="link-btn link-xhs" href="${xhsUrl}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm4 0h-2v-6h2v6z"/></svg>小红书</a>`);
+        }
+
+        if (loc.reserve) {
+          links.push(`<a class="link-btn link-reserve" href="${loc.reserve}" target="_blank">📅 预约</a>`);
+        }
+
+        html += `  <div class="card-links">${links.join('')}</div>`;
+        html += `</div>`;
+      });
+
+      container.innerHTML = html;
+
+      // Click card to focus marker
+      container.querySelectorAll('.timeline-card').forEach((card, idx) => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.link-btn')) return;
+          const loc = day.locations[idx];
+          if (loc) {
+            map.flyTo([loc.lat, loc.lng], 16, { duration: 0.8 });
+            // Highlight marker
+            allMarkers.forEach(m => {
+              const el = m.getElement();
+              if (el) el.querySelector('.custom-marker')?.classList.remove('active');
+            });
+            const targetMarker = allMarkers.find(m => m._locationData === loc);
+            if (targetMarker) {
+              targetMarker.openPopup();
+              const el = targetMarker.getElement();
+              if (el) el.querySelector('.custom-marker')?.classList.add('active');
+            }
+          }
+        });
+      });
+    }
+
+    // ===== Render Tabs =====
+    function renderTabs() {
+      const tabsEl = document.getElementById('tabs');
+      let html = '';
+      DAYS.forEach((day, idx) => {
+        const active = idx === 0 ? 'active' : '';
+        const color = idx === 0 ? '' : `style="--tab-color:${day.color}"`;
+        html += `<button class="tab ${active}" data-idx="${idx}" ${color} onclick="switchDay(${idx})">${day.label}</button>`;
+      });
+      tabsEl.innerHTML = html;
+    }
+
+    // ===== Switch Day =====
+    let currentDayIdx = 0;
+
+    function switchDay(idx) {
+      currentDayIdx = idx;
+      const day = DAYS[idx];
+
+      // Update tabs
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+      });
+
+      // Render cards
+      renderCards(day);
+
+      // Render markers
+      renderDayMarkers(day);
+
+      // Scroll cards to top
+      document.getElementById('cardsContainer').scrollTop = 0;
+    }
+
+    // ===== Navigation Action Sheet =====
+    function openNavSheet(lat, lng, name) {
+      const items = document.getElementById('actionItems');
+      const encodedName = encodeURIComponent(name);
+      const itemsHtml = `
+        <a class="action-item" href="https://maps.apple.com/?ll=${lat},${lng}&q=${encodedName}" target="_blank">
+          <div class="icon" style="background:rgba(0,113,227,0.1)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0071e3" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="label">Apple Maps</span>
+        </a>
+        <a class="action-item" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank">
+          <div class="icon" style="background:rgba(52,199,89,0.1)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="label">Google Maps</span>
+        </a>
+        <a class="action-item" href="https://uri.amap.com/marker?position=${lng},${lat}&name=${encodedName}" target="_blank">
+          <div class="icon" style="background:rgba(255,149,0,0.1)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="label">高德地图</span>
+        </a>
+      `;
+      items.innerHTML = itemsHtml;
+
+      document.getElementById('actionSheet').classList.add('show');
+      document.getElementById('actionOverlay').classList.add('show');
+    }
+
+    function closeActionSheet() {
+      document.getElementById('actionSheet').classList.remove('show');
+      document.getElementById('actionOverlay').classList.remove('show');
+    }
+
+    // ===== Locate =====
+    function locateMe() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const pulseIcon = L.divIcon({
+          className: '',
+          html: `<div style="width:20px;height:20px;background:#0071e3;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 0 rgba(0,113,227,0.4);animation:pulse 2s infinite"></div><style>@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,113,227,0.4)}70%{box-shadow:0 0 0 15px rgba(0,113,227,0)}100%{box-shadow:0 0 0 0 rgba(0,113,227,0)}}</style>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        const m = L.marker([lat, lng], { icon: pulseIcon, zIndexOffset: 1000 }).addTo(map);
+        map.flyTo([lat, lng], 15, { duration: 1 });
+        setTimeout(() => map.removeLayer(m), 30000);
+      }, err => {
+        alert('无法获取位置：' + err.message);
+      });
+    }
+
+    // ===== Sheet Toggle =====
+    let sheetExpanded = false;
+    function toggleSheet() {
+      const sheet = document.getElementById('bottomSheet');
+      sheetExpanded = !sheetExpanded;
+      if (sheetExpanded) {
+        sheet.style.transform = 'translateY(0)';
+        sheet.style.maxHeight = '92vh';
+      } else {
+        sheet.style.transform = '';
+        sheet.style.maxHeight = '78vh';
+      }
+    }
+
+    // ===== Init =====
+    renderTabs();
+    switchDay(0);
+  </script>
+</body>
+</html>
