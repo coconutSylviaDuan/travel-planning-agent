@@ -12,9 +12,8 @@
 
 ## Demo
 
-**[tokyo-trip-pi.vercel.app](https://tokyo-trip-pi.vercel.app)** — 东京 4 泊 5 日行程地图
-
-源码：[hiyeshu/tokyo-trip](https://github.com/hiyeshu/tokyo-trip)
+./nz-south-island-8day
+新西兰八天环岛行程
 
 ## 这个技能做什么
 
