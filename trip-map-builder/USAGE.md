@@ -1,7 +1,5 @@
 # Trip Map Builder — 本地项目使用说明
 
-> 基于 [hiyeshu/trip-map-builder](https://github.com/hiyeshu/trip-map-builder) (MIT License)
-
 ## 项目是什么
 
 一套面向 AI Agent 的**旅行行程规划工作流技能**，将零散的出行信息（截图、心愿单、文字描述）转化为一个可部署的**交互式行程地图页面**。
